@@ -1,4 +1,4 @@
-package com.waterbyte.servicebackend.entities;
+package com.waterbyte.servicebackend;
 
 import java.time.LocalDate;
 

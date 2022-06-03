@@ -10,15 +10,11 @@ import org.springframework.context.annotation.Configuration;
 public class AppConfiguration {
     @Bean
     public EmployeeDataService createEmployeeDataService() {
-        EmployeeDataService employeeDataService = new EmployeeDataService();
-        employeeDataService.createInitialEmployees();
-        return employeeDataService;
+        return new EmployeeDataService();
     }
 
     @Bean
     public ServicesDataService createServicesDataService() {
-        ServicesDataService servicesDataService = new ServicesDataService();
-        servicesDataService.createInitialServices();
-        return servicesDataService;
+        return new ServicesDataService();
     }
 }

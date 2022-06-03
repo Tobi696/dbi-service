@@ -1,43 +1,31 @@
 package com.waterbyte.servicebackend.services;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.waterbyte.servicebackend.Employee;
+import com.waterbyte.servicebackend.database.EmployeesRepository;
 import com.waterbyte.servicebackend.dtos.EmployeeDto;
-import com.waterbyte.servicebackend.entities.Employee;
+import com.waterbyte.servicebackend.entities.EmployeeEntity;
 import com.waterbyte.servicebackend.resources.EmployeeResource;
 
 public class EmployeeDataService {
-    private HashMap<Integer, Employee> employees = new HashMap<Integer, Employee>();
-    private int nextId = 1;
-
-    public void createInitialEmployees() {
-        Employee employee = new Employee();
-        employee.setId(nextId);
-        nextId++;
-        employee.setFirstName("John");
-        employee.setLastName("Doe");
-        employee.setLatitude(40.7128);
-        employee.setLongitude(74.0060);
-        employees.put(employee.getId(), employee);
-
-        Employee employee2 = new Employee();
-        employee2.setId(nextId);
-        nextId++;
-        employee2.setFirstName("Jane");
-        employee2.setLastName("Doe");
-        employee2.setLatitude(40.7128);
-        employee2.setLongitude(74.0060);
-        employees.put(employee2.getId(), employee2);
-    }
+    @Autowired
+    private EmployeesRepository employeesRepository;
 
     public List<EmployeeResource> getEmployeeResources() {
-        return employees.values().stream().map(employee -> convertEmployeeToEmployeeResource(employee))
-                .collect(Collectors.toList());
+        List<EmployeeResource> result = new ArrayList<EmployeeResource>();
+        for (EmployeeEntity employee : employeesRepository.findAll()) {
+            result.add(convertEmployeeToEmployeeResource(employee));
+        }
+        return result;
     }
 
-    private EmployeeResource convertEmployeeToEmployeeResource(Employee employee) {
+    private EmployeeResource convertEmployeeToEmployeeResource(EmployeeEntity employee) {
         EmployeeResource employeeResource = new EmployeeResource();
         employeeResource.setId(employee.getId());
         employeeResource.setName(employee.getFirstName() + " " + employee.getLastName());
@@ -47,15 +35,13 @@ public class EmployeeDataService {
     }
 
     public EmployeeResource addEmployee(EmployeeDto employeeDto) {
-        Employee newEmployee = new Employee();
-        newEmployee.setId(nextId);
-        nextId++;
+        EmployeeEntity newEmployee = new EmployeeEntity();
         String[] nameParts = employeeDto.getName().split(" ");
         newEmployee.setFirstName(nameParts[0]);
         newEmployee.setLastName(nameParts[1]);
         newEmployee.setLatitude(Double.parseDouble(employeeDto.getLatitude()));
         newEmployee.setLongitude(Double.parseDouble(employeeDto.getLongitude()));
-        employees.put(newEmployee.getId(), newEmployee);
+        newEmployee = employeesRepository.save(newEmployee);
         return convertEmployeeToEmployeeResource(newEmployee);
     }
 }
