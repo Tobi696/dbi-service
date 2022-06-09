@@ -1,20 +1,28 @@
 package com.waterbyte.servicebackend.services;
 
+import java.text.ParseException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.ibm.icu.text.SimpleDateFormat;
+import com.waterbyte.servicebackend.database.EmployeesRepository;
 import com.waterbyte.servicebackend.database.ServicesRepository;
 import com.waterbyte.servicebackend.dtos.ServiceDto;
 import com.waterbyte.servicebackend.entities.EmployeeEntity;
 import com.waterbyte.servicebackend.entities.ServiceEntity;
+import com.waterbyte.servicebackend.exceptions.ServiceBadRequestErrorException;
+import com.waterbyte.servicebackend.exceptions.ServiceNotFoundErrorException;
 import com.waterbyte.servicebackend.resources.ServiceResource;
 
 public class ServicesDataService {
     @Autowired
     private ServicesRepository servicesRepository;
+    @Autowired
+    private EmployeesRepository employeeRepository;
 
     public List<ServiceResource> getServiceResources() {
         List<ServiceResource> result = new ArrayList<ServiceResource>();
@@ -36,6 +44,7 @@ public class ServicesDataService {
     }
 
     public ServiceResource addService(ServiceDto serviceDto) {
+        checkServiceDto(serviceDto);
         ServiceEntity newService = new ServiceEntity();
         newService.setName(serviceDto.getName());
         EmployeeEntity employee = new EmployeeEntity();
@@ -49,14 +58,43 @@ public class ServicesDataService {
         return convertServiceToServiceResource(newService);
     }
 
+    private void checkServiceDto(ServiceDto serviceDto) {
+        if (serviceDto.getName() == null || serviceDto.getName().length() <= 4) {
+            throw new ServiceBadRequestErrorException("Service name is required");
+        }
+        if (!employeeRepository.findById(serviceDto.getEmployeeId()).isPresent()) {
+            throw new ServiceNotFoundErrorException("Employee does not exist");
+        }
+        if (serviceDto.getDate() == null || serviceDto.getDate().isEmpty()) {
+            throw new ServiceBadRequestErrorException("Service date is required");
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.mm.yyyy hh:MM");
+        try {
+            sdf.parse(serviceDto.getDate());
+        } catch (ParseException e) {
+            throw new ServiceNotFoundErrorException("Service date is invalid");
+        }
+        if (serviceDto.getAddress() == null || serviceDto.getAddress().length() <= 5) {
+            throw new ServiceBadRequestErrorException("Service address is required");
+        }
+    }
+
     public ServiceResource deleteService(int serviceId) {
-        ServiceEntity service = servicesRepository.findById(serviceId).get();
-        servicesRepository.delete(service);
-        return convertServiceToServiceResource(service);
+        Optional<ServiceEntity> service = servicesRepository.findById(serviceId);
+        if (!service.isPresent()) {
+            throw new ServiceNotFoundErrorException("Service does not exist");
+        }
+        servicesRepository.delete(service.get());
+        return convertServiceToServiceResource(service.get());
     }
 
     public ServiceResource editService(int serviceId, ServiceDto serviceDto) {
-        ServiceEntity service = servicesRepository.findById(serviceId).get();
+        Optional<ServiceEntity> optService = servicesRepository.findById(serviceId);
+        if (!optService.isPresent()) {
+            throw new ServiceNotFoundErrorException("Service does not exist");
+        }
+        ServiceEntity service = optService.get();
+        checkServiceDto(serviceDto);
         service.setName(serviceDto.getName());
         EmployeeEntity employee = new EmployeeEntity();
         employee.setId(serviceDto.getEmployeeId());
@@ -70,7 +108,18 @@ public class ServicesDataService {
     }
 
     public ServiceResource getService(int serviceId) {
-        ServiceEntity service = servicesRepository.findById(serviceId).get();
-        return convertServiceToServiceResource(service);
+        Optional<ServiceEntity> service = servicesRepository.findById(serviceId);
+        if (!service.isPresent()) {
+            throw new ServiceNotFoundErrorException("Service does not exist");
+        }
+        return convertServiceToServiceResource(service.get());
+    }
+
+    public String getServiceAddress(int serviceId) {
+        Optional<ServiceEntity> service = servicesRepository.findById(serviceId);
+        if (!service.isPresent()) {
+            throw new ServiceNotFoundErrorException("Service does not exist");
+        }
+        return service.get().getAddress();
     }
 }

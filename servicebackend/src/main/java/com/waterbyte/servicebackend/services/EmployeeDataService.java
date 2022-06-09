@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.waterbyte.servicebackend.database.EmployeesRepository;
 import com.waterbyte.servicebackend.dtos.EmployeeDto;
 import com.waterbyte.servicebackend.entities.EmployeeEntity;
+import com.waterbyte.servicebackend.exceptions.EmployeeBadRequestErrorException;
 import com.waterbyte.servicebackend.resources.EmployeeResource;
 
 public class EmployeeDataService {
@@ -31,6 +32,7 @@ public class EmployeeDataService {
     }
 
     public EmployeeResource addEmployee(EmployeeDto employeeDto) {
+        checkEmployeeDto(employeeDto);
         EmployeeEntity newEmployee = new EmployeeEntity();
         String[] nameParts = employeeDto.getName().split(" ");
         newEmployee.setFirstName(nameParts[0]);
@@ -39,5 +41,20 @@ public class EmployeeDataService {
         newEmployee.setLongitude(Double.parseDouble(employeeDto.getLongitude()));
         newEmployee = employeesRepository.save(newEmployee);
         return convertEmployeeToEmployeeResource(newEmployee);
+    }
+
+    private void checkEmployeeDto(EmployeeDto employeeDto) {
+        if (employeeDto.getName() == null || employeeDto.getName().isEmpty()) {
+            throw new EmployeeBadRequestErrorException("Employee name is required");
+        }
+        if (employeeDto.getLongitude() == null || employeeDto.getLongitude().isEmpty()) {
+            throw new EmployeeBadRequestErrorException("Employee longitude is required");
+        }
+        if (employeeDto.getLatitude() == null || employeeDto.getLatitude().isEmpty()) {
+            throw new EmployeeBadRequestErrorException("Employee latitude is required");
+        }
+        if (employeeDto.getName().length() <= 4) {
+            throw new EmployeeBadRequestErrorException("Employee name must be at least 5 characters");
+        }
     }
 }

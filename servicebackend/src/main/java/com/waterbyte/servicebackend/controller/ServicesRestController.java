@@ -49,6 +49,6 @@ public class ServicesRestController {
 
     @RequestMapping(value = "/{serviceId}/address", method = RequestMethod.GET)
     public HttpEntity<String> getServiceAddress(@PathVariable int serviceId) {
-        return new HttpEntity<>("kumt speda");
+        return new HttpEntity<>(servicesDataService.getServiceAddress(serviceId));
     }
 }
